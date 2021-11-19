@@ -41,3 +41,5 @@ if(USE_DISCORD_PRESENCE)
   target_compile_definitions(uicommon PRIVATE -DUSE_DISCORD_PRESENCE)
   target_link_libraries(uicommon PRIVATE discord-rpc)
 endif()
+
+target_link_libraries(uicommon PRIVATE wx)
