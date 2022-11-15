@@ -22,6 +22,6 @@ jobs:
     - name: Run make
       run: make
     - name: Copy Files
-      run: cp -r ../Data/Sys/ ../Data/User/ Binaries/
+      run: cp -r ../Data/Sys/ ../Data/User/ {{github.workspace}}/Binaries/
     - name: Make build portable
       run: touch {{github.workspace}}/Binaries/portable.txt
