@@ -1,0 +1,25 @@
+name: Netplay V3 for Linux
+
+on:
+  push:
+    branches: [ "bb" ]
+  pull_request:
+    branches: [ "bb" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Build
+      run: mkdir build && cd build
+    - name: Run CMAKE
+      run: cmake .. -DLINUX_LOCAL_DEV=true 
+    - name: Run make
+      run: make
+    - name: Copy Files
+      run: cp -r ../Data/Sys/ ../Data/User/ Binaries/
+    - name: Make build portable
+      run: touch Binaries/portable.txt
