@@ -18,7 +18,7 @@ jobs:
         mkdir ${{github.workspace}}/build
         cd ${{github.workspace}}/build
     - name: Run CMAKE
-      run: cmake {{github.workspace}} -DLINUX_LOCAL_DEV=true 
+      run: cmake .. -DLINUX_LOCAL_DEV=true
     - name: Run make
       run: make
     - name: Copy Files
