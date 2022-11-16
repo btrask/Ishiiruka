@@ -57,8 +57,7 @@ jobs:
         libxxf86vm-dev \
         x11proto-xinerama-dev \
         xorg \ 
-        openbox \
-        build-essential
+        openbox
     - name: "Create build directory and run CMake"
       run: cmake -S . -B build -G "Unix Makefiles" -DLINUX_LOCAL_DEV=true
     - name: "Build Project" 
