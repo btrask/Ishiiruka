@@ -11,12 +11,10 @@ jobs:
     env:
       DXSDK_DIR: "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)\\"
     name: "Windows Dolphin"
-    runs-on: windows-2022
+    runs-on: windows-2019
     steps:
     - name: "Checkout"
       uses: actions/checkout@v2.3.1
-      with:
-        submodules: recursive
     - name: "Remove Redistributable"
       shell: cmd
       run: |
@@ -25,11 +23,21 @@ jobs:
         mkdir .\Tools\DX
     - name: "Setup MSBuild"
       uses: microsoft/setup-msbuild@v1
-
-    - name: "Install DirectX SDK"
+    - name: "Cache DXSDK_Jun10.exe"
+      uses: actions/cache@v2
+      with:
+        path: ./Tools/DX/
+        key: ${{ runner.os }}
+    - name: "Download DirectX SDK"
+      working-directory: ${{ github.workspace }}
       shell: powershell
       run: |
-        choco install directx-sdk
+        if (!(Test-Path ".\Tools\DX\DXSDK_Jun10.exe" -PathType Leaf)) { Invoke-WebRequest -Uri https://github.com/project-slippi/Ishiiruka/releases/download/v2.2.5/DXSDK_Jun10.exe -UseBasicParsing -OutFile ".\Tools\DX\DXSDK_Jun10.exe" }
+    - name: "Install DirectX SDK"
+      working-directory: ${{ github.workspace }}
+      shell: cmd
+      run: |
+        .\Tools\DX\DXSDK_Jun10.exe /U /F
     - name: "Build Dolphin"
       shell: cmd
       run: |
