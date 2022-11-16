@@ -7,10 +7,68 @@ on:
     branches: [ "bb" ]
 
 jobs:
-  build:
+  windows:
+    env:
+      DXSDK_DIR: "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)\\"
+    name: "Windows Dolphin"
+    runs-on: windows-2022
+    steps:
+    - name: "Checkout"
+      uses: actions/checkout@v2.3.1
 
+    - name: "Remove Redistributable"
+      shell: cmd
+      run: |
+        MsiExec.exe /passive /X{F0C3E5D1-1ADE-321E-8167-68EF0DE699A5}
+        MsiExec.exe /passive /X{1D8E6291-B0D5-35EC-8441-6616F567A0F7}
+        mkdir .\Tools\DX
+    - name: "Setup MSBuild"
+      uses: microsoft/setup-msbuild@v1
+
+    - name: "Install DirectX SDK"
+      shell: powershell
+      run: |
+        choco install directx-sdk
+    - name: "Build Dolphin"
+      shell: cmd
+      run: |
+        msbuild /p:Configuration=Release /p:Platform=x64 ${{ github.workspace }}\Source\Dolphin.sln
+    - name: "Setup Nuget.exe"
+      uses: nuget/setup-nuget@v1
+      with:
+        nuget-version: '5.x'
+    - name: "Prepare Artifact"
+      working-directory: ${{ github.workspace }}
+      run: |
+        xcopy /E /V /Y /I .\Data\User .\Binary\x64\User
+        xcopy /E /V /Y /I .\Data\Sys .\Binary\x64\Sys
+        xcopy /E /V /Y /I .\Data\Launcher .\Binary\x64\Launcher
+        copy Changelog.txt .\Binary\x64\
+        cd .\Binary\x64\
+        rm -r Languages
+        fsutil file createnew FIX-VCRUNTIME140-ERROR.txt 0
+        echo "Download and install these: https://aka.ms/vs/16/release/vc_redist.x64.exe and https://aka.ms/vs/16/release/vc_redist.x86.exe" > .\FIX-VCRUNTIME140-ERROR.txt
+        Invoke-WebRequest -Uri https://github.com/jlambert360/PPlusLauncher/releases/download/2.2/vcruntime140_1.dll -UseBasicParsing -OutFile "vcruntime140_1.dll"
+        mkdir Games
+        cd Games
+        fsutil file createnew "Place Brawl ISO here.txt" 0
+    - name: "Package Artifact"
+      working-directory: ${{ github.workspace }}
+      run: |
+        $FILE_NAME="windows.zip"
+        mkdir artifact
+        cd .\Binary\x64\
+        7z a $FILE_NAME .\*
+        move $FILE_NAME ..\..\artifact\
+    - name: "Publish"
+      if: success()
+      uses: actions/upload-artifact@v2-preview
+      with:
+        name: windows
+        path: "./artifact/"
+
+  linux:
     runs-on: ubuntu-18.04
-
     steps:
     - name: "Checkout"
       uses: actions/checkout@v2
@@ -90,3 +148,68 @@ jobs:
       with:
         name: linux
         path: "./artifact/"
+  macOS:
+    name: "macOS Dolphin"
+    runs-on: macos-11
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: "Install 10.14 SDK"
+        if: success()
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          wget https://github.com/phracker/MacOSX-SDKs/releases/download/10.15/MacOSX10.14.sdk.tar.xz
+          tar -xf MacOSX10.14.sdk.tar.xz
+          rm MacOSX10.14.sdk.tar.xz
+          sudo mv MacOSX10.14.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/
+      - name: "Download and Install prerequisites"
+        if: success()
+        shell: bash
+        run: |
+          rm '/usr/local/bin/2to3' || true
+          echo "HOMEBREW_NO_AUTO_UPDATE=1" >> $GITHUB_ENV
+          brew upgrade cmake
+          brew install \
+          ffmpeg@2.8 \
+          libpng \
+          pkgconfig \
+          libao \
+          sound-touch \
+          hidapi \
+          python@3.10
+      - name: "Create build directory and run CMake"
+        run: cmake -S . -B build -G "Unix Makefiles"
+      - name: "Build Project" 
+        run: cmake --build build --target all --config Release -- -j$(nproc)
+      - name: Run make
+        run: |
+          cd build
+          make
+      - name: Copy Files
+        run: cp -r ${{github.workspace}}/Data/Sys/ ${{github.workspace}}/Data/User/ ${{github.workspace}}/build/Binaries
+      - name: Make build portable
+        run: touch ${{github.workspace}}/build/Binaries/portable.txt
+      - name: "Install Rust"
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-apple-darwin
+          default: true
+          override: true
+      - name: "Package"
+        if: success()
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          cd  ./build/Binaries
+          zip -r "${{ env.FILE_NAME }}.zip" Dolphin.app
+          mv "${{ env.FILE_NAME }}.zip" ../../artifact/
+      - name: "Publish"
+        if: success()
+        uses: actions/upload-artifact@v2-preview
+        with:
+          name: macOS
+          path: "./artifact/"
