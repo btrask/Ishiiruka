@@ -66,6 +66,6 @@ jobs:
         cd build
         make
     - name: Copy Files
-      run: cp -r ../Data/Sys/ ../Data/User/ {{github.workspace}}/Binaries/
+      run: cp -r ../Data/Sys/ ../Data/User/ ../Binaries/
     - name: Make build portable
-      run: touch {{github.workspace}}/Binaries/portable.txt
+      run: touch ../Binaries/portable.txt
