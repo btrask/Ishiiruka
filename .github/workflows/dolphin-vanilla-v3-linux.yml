@@ -69,3 +69,24 @@ jobs:
       run: cp -r ${{github.workspace}}/Data/Sys/ ${{github.workspace}}/Data/User/ ${{github.workspace}}/build/Binaries
     - name: Make build portable
       run: touch ${{github.workspace}}/build/Binaries/portable.txt
+    - name: "Build AppImage"
+      if: success()
+      working-directory: ${{ github.workspace }}
+      run: |
+        chmod +x ./build-appimage.sh
+        ./build-appimage.sh
+    - name: "Package"
+      if: success()
+      working-directory: ${{ github.workspace }}
+      run: |
+        mkdir artifact
+        FILE_NAME=${{ env.CURR_DATE }}-${{ env.GIT_HASH }}-${{ env.GIT_TAG }}-linux.zip
+        chmod +x ./*.AppImage
+        zip -r "${FILE_NAME}" ./*.AppImage*
+        mv "${FILE_NAME}" ./artifact/
+    - name: "Publish"
+      if: success()
+      uses: actions/upload-artifact@v2-preview
+      with:
+        name: linux
+        path: "./artifact/"
