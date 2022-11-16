@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+GenericName=Wii/GameCube Emulator
+Comment=Ishiiruka fork for SSB
+Categories=Emulator;Game;
+Icon=ishiiruka
+Keywords=vBrawl
+Name=vBrawl Ishiiruka
+Exec=ishiiruka
