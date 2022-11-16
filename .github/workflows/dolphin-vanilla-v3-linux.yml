@@ -18,7 +18,9 @@ jobs:
     - name: "Build Project" 
       run: cmake --build build --target all --config Release -- -j$(nproc)
     - name: Run make
-      run: make
+      run: |
+        cd {{github.workspace}}/build
+        make
     - name: Copy Files
       run: cp -r ../Data/Sys/ ../Data/User/ {{github.workspace}}/Binaries/
     - name: Make build portable
