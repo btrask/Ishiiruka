@@ -63,7 +63,7 @@ jobs:
       run: cmake --build build --target all --config Release -- -j$(nproc)
     - name: Run make
       run: |
-        cd {{github.workspace}}/build
+        cd build
         make
     - name: Copy Files
       run: cp -r ../Data/Sys/ ../Data/User/ {{github.workspace}}/Binaries/
