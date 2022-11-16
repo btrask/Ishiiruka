@@ -190,9 +190,7 @@ jobs:
           hidapi \
           python@3.10
       - name: "Create build directory and run CMake"
-        run: cmake -S . -B build -G "Unix Makefiles"
-      - name: "Build Project" 
-        run: cmake --build build --target all --config Release -- -j$(nproc)
+        run: cmake -S . -B build
       - name: Run make
         run: |
           cd build
