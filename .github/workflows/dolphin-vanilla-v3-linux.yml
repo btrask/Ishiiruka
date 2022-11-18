@@ -131,7 +131,8 @@ jobs:
     - name: Run make
       run: |
         cd build
-        make
+        make -j$(nproc)
+        make install DESTDIR=./AppDir;
     - name: Copy Files
       run: cp -r ${{github.workspace}}/Data/Sys/ ${{github.workspace}}/Data/User/ ${{github.workspace}}/build/Binaries
     - name: Make build portable
@@ -194,7 +195,8 @@ jobs:
       - name: Run make
         run: |
           cd build
-          make
+          make -j$(nproc)
+          make install DESTDIR=./AppDir;
       - name: Copy Files
         run: cp -r ${{github.workspace}}/Data/Sys/ ${{github.workspace}}/Data/User/ ${{github.workspace}}/build/Binaries
       - name: Make build portable
