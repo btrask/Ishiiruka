@@ -4,10 +4,6 @@
 ZSYNC_STRING="gh-releases-zsync|JaredWhiteOne|Vanilla-AppImage|latest|Vanilla_Netplay_V3-x86-64.AppImage.zsync"
 APPIMAGE_STRING="Vanilla_Netplay_V3-x86-64.AppImage"
 
-LINUXDEPLOY_PATH="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous"
-LINUXDEPLOY_FILE="linuxdeploy-x86_64.AppImage"
-LINUXDEPLOY_URL="${LINUXDEPLOY_PATH}/${LINUXDEPLOY_FILE}"
-
 UPDATEPLUG_PATH="https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous"
 UPDATEPLUG_FILE="linuxdeploy-plugin-appimage-x86_64.AppImage"
 UPDATEPLUG_URL="${UPDATEPLUG_PATH}/${UPDATEPLUG_FILE}"
@@ -20,8 +16,8 @@ APPDIR_BIN="./AppDir/usr/bin"
 
 # Grab various appimage binaries from GitHub if we don't have them
 if [ ! -e ./Tools/linuxdeploy ]; then
-	wget ${LINUXDEPLOY_URL} -O ./Tools/linuxdeploy
-	chmod +x ./Tools/linuxdeploy
+	wget -c https://github.com/$(wget -q https://github.com/probonopd/go-appimage/releases/expanded_assets/continuous -O - | grep "appimagetool-.*-x86_64.AppImage" | head -n 1 | cut -d '"' -f 2)
+	chmod +x appimagetool-*.AppImage
 fi
 if [ ! -e ./Tools/linuxdeploy-update-plugin ]; then
 	wget ${UPDATEPLUG_URL} -O ./Tools/linuxdeploy-update-plugin
@@ -36,12 +32,7 @@ fi
 rm -rf ./AppDir/
 
 # Build the AppDir directory for this image
-mkdir -p AppDir
-./Tools/linuxdeploy \
-	--appdir=./AppDir \
-	-e ./build/Binaries/ishiiruka \
-	-d ./Data/ishiiruka.desktop \
-	-i ./Data/ishiiruka.png
+./appimagetool-*.AppImage -s deploy ./Data/ishiiruka.desktop
 
 # Add the Sys dir to the AppDir for packaging
 cp -r Data/Sys ${APPDIR_BIN}
