@@ -32,7 +32,12 @@ fi
 rm -rf ./AppDir/
 
 # Build the AppDir directory for this image
-./appimagetool-*.AppImage -s deploy ./Data/ishiiruka.desktop
+mkdir -p AppDir
+./Tools/linuxdeploy \
+	--appdir=./AppDir \
+	-e ./build/Binaries/ishiiruka \
+	-d ./Data/ishiiruka.desktop \
+	-i ./Data/ishiiruka.png
 
 # Add the Sys dir to the AppDir for packaging
 cp -r Data/Sys ${APPDIR_BIN}
