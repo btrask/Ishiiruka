@@ -33,7 +33,7 @@ rm -rf ./AppDir/
 
 # Build the AppDir directory for this image
 mkdir -p AppDir
-./Tools/linuxdeploy \
+./linuxdeploy-plugin-appimage-x86_64 \
 	--appdir=./AppDir \
 	-e ./build/Binaries/ishiiruka \
 	-d ./Data/ishiiruka.desktop \
