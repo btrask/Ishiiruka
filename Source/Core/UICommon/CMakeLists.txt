@@ -35,3 +35,5 @@ if(ENABLE_LLVM)
     target_include_directories(uicommon PRIVATE ${LLVM_INCLUDE_DIRS})
   endif()
 endif()
+
+target_link_libraries(uicommon PRIVATE wx)

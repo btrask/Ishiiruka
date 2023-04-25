@@ -20,7 +20,7 @@
 
 #include "Core/ActionReplay.h"
 #include "Core/ConfigManager.h"
-#include "DolphinWX/NetPlay/NetWindow.h"
+//#include "DolphinWX/NetPlay/NetWindow.h"
 #include "Core/GeckoCode.h"
 #include "Core/GeckoCodeConfig.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -36,14 +36,14 @@ static std::map<u32, int> speedHacks;
 
 static bool IsEnabledMusicCode(const Patch& patch)
 {
-  if (NetPlayDialog::GetInstance()->IsMusicOff() && patch.name == "[P+] Music Off")
-  {
-    return true;
-  }
-  else
-  {
+//  if (NetPlayDialog::GetInstance()->IsMusicOff() && patch.name == "[P+] Music Off")
+//  {
+//    return true;
+//  }
+//  else
+//  {
     return false;
-  }
+//  }
 }
 
 static bool IsDisabledMusicCode(const Patch& patch)

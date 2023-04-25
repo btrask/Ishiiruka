@@ -113,7 +113,7 @@ public:
   static void FillWithGameNames(wxListBox* game_lbox, const GameListCtrl& game_list);
 
   bool IsRecording() override;
-  bool IsMusicOff() override;
+//  bool IsMusicOff() override;
 
 private:
   void CreateGUI();
@@ -144,6 +144,8 @@ private:
 
   bool IsNTSCBrawl();
   bool IsPMELF();
+
+  void OnMusicToggle(wxCommandEvent& event);
 
   wxListBox* m_player_lbox;
   wxTextCtrl* m_chat_text;

@@ -73,7 +73,6 @@ void GeneralConfigPane::InitializeGUI()
   m_dual_core_checkbox->SetToolTip(
       _("Splits the CPU and GPU threads so they can be run on separate cores.\nProvides major "
         "speed improvements on most modern PCs, but can cause occasional crashes/glitches."));
-  m_cheats_checkbox->SetToolTip(_("Enables the use of Action Replay and Gecko cheats."));  
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_analytics_checkbox->SetToolTip(
       _("Enables the collection and sharing of usage statistics data with the Dolphin development "

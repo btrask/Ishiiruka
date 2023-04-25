@@ -1556,6 +1556,9 @@
     <ClInclude Include="DSP\Jit\x64\DSPJitRegCache.h">
       <Filter>DSPCore\Jit</Filter>
     </ClInclude>
+    <ClInclude Include="IOS\DolphinDevice.h">
+      <Filter>IOS</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
