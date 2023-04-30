@@ -215,12 +215,17 @@ void Init(const BootParameters& boot)
     ReadHeader();
     std::thread md5thread(CheckMD5);
     md5thread.detach();
-    if (strncmp(tmpHeader.gameID, SConfig::GetInstance().GetGameID().c_str(), 6))
+
+    // TODO: This is a hack to make it possible to play input recordings with .elf loaders.
+    // Currently the input recording gets the game ID of the default ISO, but the current game ID is wrong (all zeroes?).
+    // Incidentally, the input recording has all zeroes as its game hash.
+    // Ideally input recordings would store more information about both the .elf loader as well as the ISO (not to mention Gecko codes, SD card hash, etc).
+/*    if (strncmp(tmpHeader.gameID, SConfig::GetInstance().GetGameID().c_str(), 6))
     {
       PanicAlertT("The recorded game (%s) is not the same as the selected game (%s)",
         tmpHeader.gameID, SConfig::GetInstance().GetGameID().c_str());
       EndPlayInput(false);
-    }
+    }*/
   }
 
   if (IsRecordingInput())
