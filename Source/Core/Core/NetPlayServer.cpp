@@ -956,6 +956,7 @@ void NetPlayServer::Send(ENetPeer* socket, const sf::Packet& packet)
   ENetPacket* epac =
     enet_packet_create(packet.getData(), packet.getDataSize(), ENET_PACKET_FLAG_RELIABLE);
   enet_peer_send(socket, 0, epac);
+  enet_host_flush(m_server); // Reduce latency. // TODO: This should be added to enet.
 }
 
 void NetPlayServer::KickPlayer(PlayerId player)

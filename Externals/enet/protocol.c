@@ -1722,12 +1722,21 @@ enet_protocol_send_outgoing_commands (ENetHost * host, ENetEvent * event, int ch
 
         currentPeer -> lastSendTime = host -> serviceTime;
 
-        sentLength = enet_socket_send (host -> socket, & currentPeer -> address, host -> buffers, host -> bufferCount);
+        // Pre-emptively try sending the packet 5 times to handle packet loss.
+        for(size_t i = 0; i < 5; i++) {
+                (void)enet_socket_send (host -> socket, & currentPeer -> address, host -> buffers, host -> bufferCount);
+        }
+        sentLength = 0;
+        for(size_t i = 0; i < host->bufferCount; i++) {
+                sentLength += host->buffers[i].dataLength;
+        }
+        // We don't multiply sentLength by the number of times we sent for transparency.
 
         enet_protocol_remove_sent_unreliable_commands (currentPeer);
 
-        if (sentLength < 0)
-          return -1;
+        // The internet doesn't work like that.
+//        if (sentLength < 0)
+//          return -1;
 
         host -> totalSentData += sentLength;
         host -> totalSentPackets ++;

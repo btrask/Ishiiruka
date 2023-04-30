@@ -622,6 +622,7 @@ void NetPlayClient::Send(sf::Packet& packet)
   ENetPacket* epac =
     enet_packet_create(packet.getData(), packet.getDataSize(), ENET_PACKET_FLAG_RELIABLE);
   enet_peer_send(m_server, 0, epac);
+  enet_host_flush(m_client); // Reduce latency. // TODO: This should be added to enet.
 }
 
 void NetPlayClient::DisplayPlayersPing()
