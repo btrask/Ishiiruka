@@ -13,12 +13,10 @@
 #include <mbedtls/md.h>
 #include <mutex>
 #include <sstream>
-#include <stdarg.h>
 #include <thread>
 #include <utility>
 #include <variant>
 #include <vector>
-#include <zlib.h>
 
 #include "Common/Assert.h"
 #include "Common/ChunkFile.h"
@@ -35,7 +33,6 @@
 #include "Core/Boot/Boot.h"
 #include "Core/Config/MainSettings.h"
 #include "Core/Config/SYSCONFSettings.h"
-#include "Core/Config/GraphicsSettings.h"
 #include "Core/ConfigLoaders/MovieConfigLoader.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -72,7 +69,6 @@ static PlayMode s_playMode = MODE_NONE;
 
 static u8 s_controllers = 0;
 static ControllerState s_padState;
-static gzFile s_recording_file = NULL;
 static DTMHeader tmpHeader;
 static std::vector<u8> s_temp_input;
 static u64 s_currentByte = 0;
@@ -140,103 +136,6 @@ static std::array<u8, 20> ConvertGitRevisionToBytes(const std::string& revision)
 
   return revision_bytes;
 }
-
-
-
-static void hex_from_bytes(char *out, unsigned char const *buf, size_t len) {
-	char const map[] = "0123456789abcdef";
-	for(size_t i = 0; i < len; i++) {
-		out[i*2+0] = map[buf[i] >> 4 & 0xf];
-		out[i*2+1] = map[buf[i] >> 0 & 0xf];
-	}
-	out[len*2+0] = '\0';
-}
-static int gzprintf2(gzFile f, char const *fmt, ...) __attribute__((format(printf, 2, 3)));
-static int gzprintf2(gzFile f, char const *fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-	int rc = gzvprintf(f, fmt, args);
-	va_end(args);
-	if(0 == rc) rc = Z_MEM_ERROR; // gzprintf() can return 0 on failure...
-	if(Z_MEM_ERROR == rc) { rc = Z_ERRNO; errno = ENOMEM; }
-	return rc;
-}
-static gzFile dtm2_create(char const *path) {
-	int const compressed = 0;
-	SConfig& cfg = SConfig::GetInstance();
-	char dolphin_compatibility_sha1_hex[sizeof(s_revision)*2+1] = "";
-	char game_md5_hex[sizeof(s_MD5)*2+1] = "";
-	int rc = 0;
-
-	hex_from_bytes(dolphin_compatibility_sha1_hex, s_revision, sizeof(s_revision));
-	hex_from_bytes(game_md5_hex, s_MD5, sizeof(s_MD5));
-
-	gzFile f = gzopen(path, compressed ? "wbx9" : "wbxT");
-	if(!f) { rc = Z_ERRNO; goto cleanup; }
-
-	rc=rc<0?rc : gzprintf2(f, "DTM2\n");
-
-	// User info
-	rc=rc<0?rc : gzprintf2(f, "Dolphin User SHA1: %s\n", dolphin_compatibility_sha1_hex);
-	rc=rc<0?rc : gzprintf2(f, "Author: %s\n", "");
-	rc=rc<0?rc : gzprintf2(f, "Host Time: %lld\n", (long long)time(NULL));
-	rc=rc<0?rc : gzprintf2(f, "Description: %s\n", "");
-
-//	rc=rc<0?rc : gzprintf2(f, "Frame Count: %s\n"); // TODO: Remove this?
-	rc=rc<0?rc : gzprintf2(f, "Lag Count: %lld\n", (long long)s_totalLagCount);
-//	rc=rc<0?rc : gzprintf2(f, "Input Count: %s\n"); // TODO: Remove this?
-	rc=rc<0?rc : gzprintf2(f, "Rerecord Count: %d\n", s_rerecords);
-
-	// Playback info (to prevent desyncs)
-	rc=rc<0?rc : gzprintf2(f, "Dolphin Compatibility SHA1: %s\n", dolphin_compatibility_sha1_hex);
-	rc=rc<0?rc : gzprintf2(f, "Game System: %s\n", cfg.bWii ? "Wii" : "GCN");
-	rc=rc<0?rc : gzprintf2(f, "Save State MD5: %s\n", s_bRecordingFromSaveState ? "(unknown)" : "(none)");
-	rc=rc<0?rc : gzprintf2(f, "Game Time: %lld\n", (long long)s_recordingStartTime);
-	rc=rc<0?rc : gzprintf2(f, "Controllers: %#x\n", s_controllers & (cfg.bWii ? 0xFF : 0x0F)); // TODO: 0b binary format?
-//	rc=rc<0?rc : gzprintf2(f, "Alternate Disc: %s\n"); // TODO?
-
-	rc=rc<0?rc : gzprintf2(f, "Game ID: %s\n", cfg.GetGameID().c_str());
-	rc=rc<0?rc : gzprintf2(f, "Game MD5: %s\n", game_md5_hex);
-
-//	rc=rc<0?rc : gzprintf2(f, "Launcher ID: %s\n");
-//	rc=rc<0?rc : gzprintf2(f, "Launcher MD5: %s\n");
-
-//	rc=rc<0?rc : gzprintf2(f, "SD Card MD5: %s\n");
-//	rc=rc<0?rc : gzprintf2(f, "Memory Card A MD5: %s\n");
-//	rc=rc<0?rc : gzprintf2(f, "Memory Card B MD5: %s\n");
-
-//	rc=rc<0?rc : gzprintf2(f, "Gecko Code Name: %s\n");
-
-#define CFG(X) Config::Get(Config::X)
-	rc=rc<0?rc : gzprintf2(f, "Dual Core: %d\n", CFG(MAIN_CPU_THREAD));
-	rc=rc<0?rc : gzprintf2(f, "DSP HLE: %d\n", CFG(MAIN_DSP_HLE));
-	rc=rc<0?rc : gzprintf2(f, "Fast Disc Speed: %d\n", CFG(MAIN_FAST_DISC_SPEED));
-	rc=rc<0?rc : gzprintf2(f, "CPU Core: %d\n", CFG(MAIN_CPU_CORE));
-	rc=rc<0?rc : gzprintf2(f, "Sync GPU: %d\n", CFG(MAIN_SYNC_GPU));
-	rc=rc<0?rc : gzprintf2(f, "Video Backend: %s\n", CFG(MAIN_GFX_BACKEND).c_str());
-
-	rc=rc<0?rc : gzprintf2(f, "Progressive Scan: %d\n", CFG(SYSCONF_PROGRESSIVE_SCAN));
-	rc=rc<0?rc : gzprintf2(f, "PAL60: %d\n", CFG(SYSCONF_PAL60));
-	rc=rc<0?rc : gzprintf2(f, "Game Language: %d\n", cfg.bWii ? CFG(SYSCONF_LANGUAGE) : CFG(MAIN_GC_LANGUAGE));
-
-	rc=rc<0?rc : gzprintf2(f, "Use XFB: %d\n", CFG(GFX_USE_XFB));
-	rc=rc<0?rc : gzprintf2(f, "Use Real XFB: %d\n", CFG(GFX_USE_REAL_XFB));
-	rc=rc<0?rc : gzprintf2(f, "Hack-EFB Access: %d\n", CFG(GFX_HACK_EFB_ACCESS_ENABLE));
-	rc=rc<0?rc : gzprintf2(f, "Hack-EFB Skip Copy To RAM: %d\n", CFG(GFX_HACK_SKIP_EFB_COPY_TO_RAM));
-	rc=rc<0?rc : gzprintf2(f, "Hack-EFB Emulate Format Changes: %d\n", CFG(GFX_HACK_EFB_EMULATE_FORMAT_CHANGES));
-#undef CFG
-
-	rc=rc<0?rc : gzprintf2(f, "\n");
-
-	rc=rc<0?rc : gzflush(f, Z_SYNC_FLUSH);
-
-cleanup:
-	if(rc < 0) { gzclose(f); f = NULL; }
-	if(rc < 0 && 0 == errno) errno = EIO; // Just to be sure...
-	return f;
-}
-
-
 
 // NOTE: GPU Thread
 std::string GetInputDisplay()
@@ -578,8 +477,6 @@ void ChangeWiiPads(bool instantly)
   }
 }
 
-void SaveRecording_old(const std::string& filename);
-
 // NOTE: Host Thread
 bool BeginRecordingInput(int controllers)
 {
@@ -627,8 +524,8 @@ bool BeginRecordingInput(int controllers)
 
       std::thread md5thread(GetMD5);
       md5thread.detach();
+      GetSettings();
     }
-    GetSettings(); // TODO: Where should this actually be initialized?
 
     // Wiimotes cause desync issues if they're not reset before launching the game
     if (!Core::IsRunningAndStarted())
@@ -642,20 +539,6 @@ bool BeginRecordingInput(int controllers)
     s_temp_input.clear();
 
     s_currentByte = 0;
-
-
-    time_t now = time(NULL);
-    struct tm *now2 = localtime(&now);
-    char timestr[63+1];
-    strftime(timestr, sizeof(timestr), "%Y-%m-%d-%Hh%Mm%Ss", now2);
-    char const *gameID = SConfig::GetInstance().GetGameID().c_str();
-    char const *dir = "./replays";
-    char path[4095+1];
-    snprintf(path, sizeof(path), "%s/%s-unknown players.%s.dtm2", dir, timestr, gameID);
-    fprintf(stderr, "writing to %s\n", path);
-    File::CreateDir(dir);
-    s_recording_file = dtm2_create(path);
-
 
     if (Core::IsRunning())
       Core::UpdateWantDeterminism();
@@ -930,11 +813,6 @@ void RecordInput(GCPadStatus* PadStatus, int controllerID)
   s_temp_input.resize(s_currentByte + sizeof(ControllerState));
   memcpy(&s_temp_input[s_currentByte], &s_padState, sizeof(ControllerState));
   s_currentByte += sizeof(ControllerState);
-
-  gzfwrite(&s_padState, sizeof(s_padState), 1, s_recording_file);
-  if(0 == s_currentFrame % (60*10)) { // Every 10 seconds.
-    gzflush(s_recording_file, Z_PARTIAL_FLUSH); // TODO: Redundant and probably gets called twice.
-  }
 }
 
 // NOTE: CPU Thread
@@ -957,12 +835,6 @@ void RecordWiimote(int wiimote, u8* data, u8 size)
   s_temp_input[s_currentByte++] = size;
   memcpy(&s_temp_input[s_currentByte], data, size);
   s_currentByte += size;
-
-  gzfwrite(&size, 1, 1, s_recording_file);
-  gzfwrite(data, size, 1, s_recording_file);
-  if(0 == s_currentFrame % (60*10)) { // Every 10 seconds.
-    gzflush(s_recording_file, Z_PARTIAL_FLUSH); // TODO: Redundant and probably gets called twice.
-  }
 }
 
 // NOTE: EmuThread / Host Thread
@@ -1422,13 +1294,6 @@ void EndPlayInput(bool cont)
 // NOTE: Save State + Host Thread
 void SaveRecording(const std::string& filename)
 {
-    SaveRecording_old(filename);
-    gzflush(s_recording_file, Z_SYNC_FLUSH); // Try to make sure this is flushed no matter what.
-    // TODO: This doesn't even get called unless the user saves a normal dtm manually.
-}
-
-void SaveRecording_old(const std::string& filename)
-{
   File::IOFile save_record(filename, "wb");
   // Create the real header now and write it
   DTMHeader header;
@@ -1619,11 +1484,6 @@ static void GetMD5()
 // NOTE: EmuThread
 void Shutdown()
 {
-  if(s_recording_file) {
-    gzflush(s_recording_file, Z_SYNC_FLUSH);
-    (void)gzclose(s_recording_file); s_recording_file = NULL;
-  }
-
   s_currentInputCount = s_totalInputCount = s_totalFrames = s_tickCountAtLastInput = 0;
   s_temp_input.clear();
 }
