@@ -1722,8 +1722,8 @@ enet_protocol_send_outgoing_commands (ENetHost * host, ENetEvent * event, int ch
 
         currentPeer -> lastSendTime = host -> serviceTime;
 
-        // Pre-emptively try sending the packet 5 times to handle packet loss.
-        for(size_t i = 0; i < 5; i++) {
+        // Pre-emptively try sending the packet many times to handle packet loss.
+        for(size_t i = 0; i < 50; i++) {
                 (void)enet_socket_send (host -> socket, & currentPeer -> address, host -> buffers, host -> bufferCount);
         }
         sentLength = 0;
